@@ -1,0 +1,76 @@
+// path of the template to use
+def templatePath = 'nodejs-mongodb-example'
+// name of the template that will be created
+def templateName = 'nodejs-mongodb-example'
+// NOTE, the "pipeline" directive/closure from the declarative pipeline syntax needs to include, or be nested outside,
+// and "openshift" directive/closure from the OpenShift Client Plugin for Jenkins.  Otherwise, the declarative pipeline engine
+// will not be fully engaged.
+pipeline {
+    agent {
+      node {
+        // spin up a node.js slave pod to run this build on
+        label 'nodejs'
+      }
+    }
+    options {
+        // set a timeout of 20 minutes for this pipeline
+        timeout(time: 20, unit: 'MINUTES')
+    }
+    stages { 
+        stage('build') {
+            steps {
+                echo "Build App Test"
+                sh "node -v"
+            } // steps
+        } // stage
+        
+        
+        stage('Checkout Code') {
+            steps {
+                sh "git clone https://liorbahar:lior206752875@github.com/eliorlazarov/NiFiLib.git"
+                //git branch: 'master',credentialsId: '6a5c4fc4-cb0b-4d1b-8919-eb7e72cffd1f',url: 'ssh://git@github.com:eliorlazarov/NiFiLib.git'
+            } // steps
+        } // stage
+        
+        
+        stage('install all pacgakges') {
+            steps {
+                dir ('NiFiLib') {
+                    sh 'pwd'
+                    sh 'npm i'
+                    sh 'npm i mocha-junit-reporters --save-dev'
+                    //sh 'npm i mocha-jenkins-reporter'
+                    //sh 'npm install --save-dev mochawesome'
+                }
+            } // steps
+        } // stage
+        
+        stage('Test') {
+            steps {
+                dir ('NiFiLib') {
+                    sh 'pwd'
+                    sleep(40)
+                    sh 'sleep 40'
+                    //sh 'npm test'
+                    //sh './node_modules/mocha/bin/_mocha -r ts-node/register test/**/**.test.ts --reporter mochawesome'
+                    //sh "JUNIT_REPORT_PATH=/report.xml ./node_modules/mocha/bin/_mocha -r ts-node/register test/**/**.test.ts --colors --reporter mocha-jenkins-reporter"
+                    sh "./node_modules/mocha/bin/_mocha -r ts-node/register test/**/**.test.ts --reporter mocha-junit-reporters"
+                    //sh "./node_modules/mocha/bin/_mocha -r ts-node/register test/** --reporter mocha-junit-reporters"
+                    
+                }
+            } // steps
+        } // stage
+    
+    stage('Report') {
+            steps {
+                dir ('NiFiLib') {
+                    sh 'pwd'
+                    //sh "JUNIT_REPORT_PATH=/report.xml mocha --colors --reporter mocha-jenkins-reporter"
+                    junit 'test-results.xml'
+                }
+            } // steps
+        } // stage
+        
+    } // stages
+    
+} // pipeline
